@@ -406,49 +406,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6bd423642e236464196866e274c23689, type: 3}
---- !u!1 &688287087 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6287004698725560615, guid: 6bd423642e236464196866e274c23689,
-    type: 3}
-  m_PrefabInstance: {fileID: 688287086}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &688287088
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 688287087}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bbd109a9e41c9554a8a0be997dbdc9b4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  useMulticast: 1
-  port: 20001
-  multicastIpAddress: 230.0.0.1
-  showZEDFusionMetrics: 1
---- !u!114 &688287089
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 688287087}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 11bf08251bace62458c9f347c41d8c27, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  enableAvatar: 1
-  avatars:
-  - {fileID: 9118140948381514423, guid: bc814fadc039fe94099273e678b5903a, type: 3}
-  enableSDKSkeleton: 1
-  offsetSDKSkeleton: {x: 1, y: 0, z: 0}
-  skeletonBaseMaterial: {fileID: 2100000, guid: 604a4fd1091665141aad5776f95cd50b,
-    type: 2}
-  mirrorMode: 0
-  zedStreamingClient: {fileID: 688287088}
 --- !u!1 &1388312945
 GameObject:
   m_ObjectHideFlags: 0
