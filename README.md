@@ -91,7 +91,7 @@ Main prefabs :
 - Import the Unity package in your project or just open the project provided on this repo.
 - Check that the `Port` and `Multicast IP Address` variables of the `ZED Streaming Client` script on the `Fusion Manager` prefab are set to the same values as in the `main.cpp` set previously.
 
-![zedstreamingclientimage here]()
+![zedstreamclient](https://user-images.githubusercontent.com/113181784/228796267-3901e7aa-842b-4453-bda6-0461e0b27552.jpg)
 
 - Run the scene and you should see avatars moving in Unity !
 
@@ -99,7 +99,7 @@ Main prefabs :
 
 These are located on the `ZED Skeleton Tracking Manager` script in the `Fusion Manager` prefab.
 
-![zedskeletontrackingmanagerimage here]()
+![sedskmanager](https://user-images.githubusercontent.com/113181784/228796295-655becda-8b87-47a0-be5a-3e9f5ed69f55.jpg)
 
 - `Enable Avatar` / `Enable SDK Skeleton` : controls the visibility of the 3D avatar and of the skeleton directly derived from the keypoints of the SDK.
 - `Avatars` : Array of 3D avatars randomly chosen when detecting a new person.
