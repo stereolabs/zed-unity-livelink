@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6287004698725560615
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6428892374721365409}
+  - component: {fileID: 688287088}
+  - component: {fileID: 688287089}
+  m_Layer: 0
+  m_Name: FusionManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6428892374721365409
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6287004698725560615}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &688287088
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6287004698725560615}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbd109a9e41c9554a8a0be997dbdc9b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  port: 20001
+  multicastIpAddress: 230.0.0.1
+  showDebug: 1
+--- !u!114 &688287089
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6287004698725560615}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 11bf08251bace62458c9f347c41d8c27, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enableAvatar: 1
+  avatars:
+  - {fileID: 9118140948381514423, guid: bc814fadc039fe94099273e678b5903a, type: 3}
+  enableSDKSkeleton: 0
+  offsetSDKSkeleton: {x: 1, y: 0, z: 0}
+  skeletonBaseMaterial: {fileID: 2100000, guid: 604a4fd1091665141aad5776f95cd50b, type: 2}
+  mirrorMode: 0
+  logFusionMetrics: 0
+  zedStreamingClient: {fileID: 688287088}
