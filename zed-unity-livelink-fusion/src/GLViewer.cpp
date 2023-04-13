@@ -246,7 +246,7 @@ void GLViewer::render() {
     }
 }
 
-inline bool renderObject(const sl::BodyData& i, const bool isTrackingON) {
+inline bool renderBody(const sl::BodyData& i, const bool isTrackingON) {
     if (isTrackingON)
         return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK);
     else
@@ -260,10 +260,8 @@ void createSKPrimitive(sl::BodyData& body, const std::vector<std::pair<T, T>>& m
     for (auto& limb : map) {
         sl::float3 kp_1 = body.keypoint[getIdx(limb.first)];
         sl::float3 kp_2 = body.keypoint[getIdx(limb.second)];
-        float norm_1 = kp_1.norm();
-        float norm_2 = kp_2.norm();
         // draw cylinder between two keypoints
-        if (std::isfinite(norm_1) && std::isfinite(norm_2))
+        if (std::isfinite(kp_1.norm()) && std::isfinite(kp_2.norm()))
             skp.addCylinder(kp_1, kp_2, clr_id, cylinder_thickness);
     }
 
@@ -276,33 +274,52 @@ void createSKPrimitive(sl::BodyData& body, const std::vector<std::pair<T, T>>& m
     }
 }
 
-void GLViewer::addSKeleton(sl::BodyData& obj, Simple3DObject& simpleObj, sl::float4 clr_id, bool raw) {
-    if (obj.keypoint.size() == 18)
+void GLViewer::addSKeleton(sl::BodyData& obj, Simple3DObject& simpleObj, sl::float4 clr_id, bool raw, sl::BODY_FORMAT format) {
+
+    switch (format)
+    {
+    case sl::BODY_FORMAT::BODY_18:
         createSKPrimitive(obj, sl::BODY_18_BONES, simpleObj, clr_id, raw);
-    else if (obj.keypoint.size() == 34)
+        break;
+    case sl::BODY_FORMAT::BODY_34:
         createSKPrimitive(obj, sl::BODY_34_BONES, simpleObj, clr_id, raw);
-    else if (obj.keypoint.size() == 38)
+        break;
+    case sl::BODY_FORMAT::BODY_38:
         createSKPrimitive(obj, sl::BODY_38_BONES, simpleObj, clr_id, raw);
-    else
+        break;
+    case sl::BODY_FORMAT::BODY_70:
         createSKPrimitive(obj, sl::BODY_70_BONES, simpleObj, clr_id, raw);
+        break;
+    }
+}
+
+void GLViewer::addSKeleton(sl::BodyData& obj, Simple3DObject& simpleObj, sl::float4 clr_id, bool raw) {
+
+    switch (obj.keypoint.size())
+    {
+    case 18:
+        createSKPrimitive(obj, sl::BODY_18_BONES, simpleObj, clr_id, raw);
+        break;
+    case 34:
+        createSKPrimitive(obj, sl::BODY_34_BONES, simpleObj, clr_id, raw);
+        break;
+    case 38:
+        createSKPrimitive(obj, sl::BODY_38_BONES, simpleObj, clr_id, raw);
+        break;
+    case 70:
+        createSKPrimitive(obj, sl::BODY_70_BONES, simpleObj, clr_id, raw);
+        break;
+    }
 }
 
 void GLViewer::updateBodies(sl::Bodies& bodies, std::map<sl::CameraIdentifier, sl::Bodies>& singldata, sl::FusionMetrics& metrics) {
     mtx.lock();
 
-    if (bodies.is_new)
-    {
+    if (bodies.is_new) {
         skeletons.clear();
-        for (unsigned int i = 0; i < bodies.body_list.size(); i++)
-        {
-            auto obj = bodies.body_list[i];
-            // printf("ID %d => STATE : %d \n", obj.id, obj.tracking_state);
-            if (obj.tracking_state == sl::OBJECT_TRACKING_STATE::OK)
-            {
-                // draw skeletons
-                auto clr_id = generateColorID(obj.id);
-                addSKeleton(obj, skeletons, clr_id, false);
-            }
+        for (auto& it : bodies.body_list) {
+            if (renderBody(it, bodies.is_tracked))
+                addSKeleton(it, skeletons, generateColorID(it.id), false, bodies.body_format);
         }
     }
 
@@ -311,7 +328,7 @@ void GLViewer::updateBodies(sl::Bodies& bodies, std::map<sl::CameraIdentifier, s
 
     ObjectClassName obj_str;
     obj_str.name_lineA = "Publishers :" + std::to_string(metrics.mean_camera_fused);
-    obj_str.name_lineB = "Stdv :" + std::to_string(metrics.mean_stdev_between_camera * 1000.f);
+    obj_str.name_lineB = "Sync :" + std::to_string(metrics.mean_stdev_between_camera * 1000.f);
     obj_str.color = sl::float4(0.9, 0.9, 0.9, 1);
     obj_str.position = sl::float3(10, (id * 30), 0);
     fusionStats.push_back(obj_str);
@@ -323,21 +340,15 @@ void GLViewer::updateBodies(sl::Bodies& bodies, std::map<sl::CameraIdentifier, s
             auto& sk_r = skeletons_raw[it.first.sn];
             sk_r.clear();
             sk_r.setDrawingType(GL_QUADS);
-            //std::cout<<"Camera "<<it.first.sn<<" Objs "<<it.second.objects.body_list.size()<<  " FPS "<<it.second.stats.received_fps<<"\n";
 
-            for (auto& obj : it.second.body_list) {
-                //printf("ID %d => STATE : %d \n", obj.id, obj.tracking_state);
-                //if (obj.tracking_state == sl::OBJECT_TRACKING_STATE::OK) 
-                {
-                    // draw skeletons
-                    addSKeleton(obj, sk_r, clr_id, true);
-                }
+            for (auto& sk : it.second.body_list) {
+                if (renderBody(sk, it.second.is_tracked))
+                    addSKeleton(sk, sk_r, clr_id, true);
             }
         }
 
         ObjectClassName obj_str;
         obj_str.name_lineA = "CAM: " + std::to_string(it.first.sn) + " FPS: " + std::to_string(metrics.camera_individual_stats[it.first].received_fps);
-        //obj_str.name_lineB = "Latency:" + std::to_string(it.second.stats.received_latency) + "Sync Latency: " + std::to_string(it.second.stats.synced_latency);
         obj_str.name_lineB = "Ratio Detection :" + std::to_string(metrics.camera_individual_stats[it.first].ratio_detection) + " Delta " + std::to_string(metrics.camera_individual_stats[it.first].delta_ts * 1000.f);
         obj_str.color = clr_id;
         obj_str.position = sl::float3(10, (id * 30), 0);
@@ -353,7 +364,7 @@ void GLViewer::update() {
         return;
     }
 
-    if (keyStates_['h'] == KEY_STATE::UP)
+    if (keyStates_['r'] == KEY_STATE::UP)
         currentInstance_->show_raw = !currentInstance_->show_raw;
 
     // Rotate camera with mouse

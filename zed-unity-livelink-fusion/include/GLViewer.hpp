@@ -5,8 +5,6 @@
 #include <sl/Camera.hpp>
 #include <sl/Fusion.hpp>
 
-#include "global.hpp"
-
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 
@@ -297,6 +295,7 @@ private:
     static void keyReleasedCallback(unsigned char c, int x, int y);
     static void idle();
 
+    void addSKeleton(sl::BodyData&, Simple3DObject&, sl::float4 clr_id, bool raw, sl::BODY_FORMAT format);
     void addSKeleton(sl::BodyData&, Simple3DObject&, sl::float4 clr_id, bool raw);
 
     bool available;
