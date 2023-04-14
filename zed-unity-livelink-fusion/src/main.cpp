@@ -24,19 +24,13 @@
 // ZED include
 #include "SenderRunner.hpp"
 #include "GLViewer.hpp"
-#include "RelocRW.hpp"
-#include "global.hpp"
 #include "PracticalSocket.h"
 #include "json.hpp"
-#include "FusionRunner.hpp"
-
 #include <sl/Camera.hpp>
-
-using namespace sl;
 
 nlohmann::json getJson(sl::FusionMetrics metrics, sl::Bodies& bodies, sl::BODY_FORMAT body_format);
 nlohmann::json bodyDataToJson(sl::BodyData body);
-void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
+void print(string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, string msg_suffix = "");
 
 /// ----------------------------------------------------------------------------
 /// ----------------------------------------------------------------------------
@@ -44,7 +38,13 @@ void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string 
 /// ----------------------------------------------------------------------------
 /// ----------------------------------------------------------------------------
 
-FusionRunner fusion;
+    // Defines the Coordinate system and unit used in this sample
+static const sl::COORDINATE_SYSTEM COORDINATE_SYSTEM = sl::COORDINATE_SYSTEM::LEFT_HANDED_Y_UP;
+static const sl::UNIT UNIT = sl::UNIT::METER;
+static const sl::BODY_TRACKING_MODEL BODY_MODEL = sl::BODY_TRACKING_MODEL::HUMAN_BODY_ACCURATE;
+static const sl::BODY_FORMAT BODY_FORMAT = sl::BODY_FORMAT::BODY_38;
+
+std::vector<sl::CameraIdentifier> cameras;
 
 int main(int argc, char **argv) {
 
@@ -52,34 +52,86 @@ int main(int argc, char **argv) {
         std::cout << "Need a Localization file in input" << std::endl;
         return 1;
     }
+
     std::string json_config_filename(argv[1]);
 
-    auto z_inputs = sl::readFusionConfigurationFile(json_config_filename, COORD_SYS, UNIT_SYS);
+    auto configurations = sl::readFusionConfigurationFile(json_config_filename, COORDINATE_SYSTEM, UNIT);
 
-    if (z_inputs.empty()) {
-        std::cout << "Empty File " << std::endl;
-        return 1;
+    if (configurations.empty()) {
+        std::cout << "Empty configuration File." << std::endl;
+        return EXIT_FAILURE;
     }
 
-    std::vector<SenderRunner> senders(z_inputs.size());
-    for (int z = 0; z < z_inputs.size(); z++) {
-        std::cout << "Try to open ZED " << z_inputs[z].serial_number << ".." << std::endl;
-        auto state = senders[z].open(z_inputs[z]);
-        if (state)
-            std::cout << "ZED " << z_inputs[z].serial_number << " is ready " << std::endl;
+    // Check if the ZED camera should run within the same process or if they are running on the edge.
+    std::vector<SenderRunner> clients(configurations.size());
+    int id_ = 0;
+    for (auto conf : configurations) {
+        // if the ZED camera should run locally, then start a thread to handle it
+        if (conf.communication_parameters.getType() == sl::CommunicationParameters::COMM_TYPE::INTRA_PROCESS) {
+            std::cout << "Try to open ZED " << conf.serial_number << ".." << std::flush;
+            auto state = clients[id_++].open(conf.input_type, BODY_FORMAT);
+            if (state)
+                std::cout << ". ready !" << std::endl;
+        }
         else
-            std::cout << "Fail to open ZED " << z_inputs[z].serial_number << std::endl;
+            std::cout << "Fail to open ZED " << conf.serial_number << std::endl;
     }
 
-    // start sender at the same time (better suited when playing back svos)
-    for (int z = 0; z < z_inputs.size(); z++)
-        senders[z].start();
+    // start camera threads
+    for (auto& it : clients)
+        it.start();
 
-    fusion.start(z_inputs);
+    // Now that the ZED camera are running, we need to initialize the fusion module
+    sl::InitFusionParameters init_params;
+    init_params.coordinate_units = UNIT;
+    init_params.coordinate_system = COORDINATE_SYSTEM;
+    init_params.verbose = true;
+
+    // create and initialize it
+    sl::Fusion fusion;
+    fusion.init(init_params);
+
+    // subscribe to every cameras of the setup to internally gather their data
+    for (auto& it : configurations) {
+        sl::CameraIdentifier uuid(it.serial_number);
+        // to subscribe to a camera you must give its serial number, the way to communicate with it (shared memory or local network), and its world pose in the setup.
+        auto state = fusion.subscribe(uuid, it.communication_parameters, it.pose);
+        if (state != sl::FUSION_ERROR_CODE::SUCCESS)
+            std::cout << "Unable to subscribe to " << std::to_string(uuid.sn) << " . " << state << std::endl;
+        else
+            cameras.push_back(uuid);
+    }
+
+    // check that at least one camera is connected
+    if (cameras.empty()) {
+        std::cout << "no connections " << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    // as this sample shows how to fuse body detection from the multi camera setup
+    // we enable the Body Tracking module with its options
+    sl::BodyTrackingFusionParameters body_fusion_init_params;
+    body_fusion_init_params.enable_tracking = true;
+    body_fusion_init_params.enable_body_fitting = true;
+    fusion.enableBodyTracking(body_fusion_init_params);
+
+    // define fusion behavior 
+    sl::BodyTrackingFusionRuntimeParameters body_tracking_runtime_parameters;
+    // be sure that the detection skeleton is complete enough
+    body_tracking_runtime_parameters.skeleton_minimum_allowed_keypoints = 7;
+
+    // we can also want to retrieve skeleton seen by multiple camera, in this case at least half of them
+    body_tracking_runtime_parameters.skeleton_minimum_allowed_camera = cameras.size() / 2.;
+
 #if DISPLAY_OGL
     GLViewer viewer;
     viewer.init(argc, argv);
 #endif
+
+    // fusion outputs
+    sl::Bodies fused_bodies;
+    std::map<sl::CameraIdentifier, sl::Bodies> camera_raw_data;
+    sl::FusionMetrics metrics;
 
     bool run = true;
 
@@ -96,23 +148,32 @@ int main(int argc, char **argv) {
     servPort = 20001;
 
     std::cout << "Sending fused data at " << servAddress << ":" << servPort << std::endl;
-    // ----------------------------------
-    // UDP to Unity----------------------
-    // ----------------------------------
 
-    auto ptr_data = SharedData::getInstance();
-
+    // run the fusion as long as the viewer is available.
     while (run)
     {
-        if (ptr_data->bodiesData.mtx.try_lock()) {
+        // run the fusion process (which gather data from all camera, sync them and process them)
+        if (fusion.process() == sl::FUSION_ERROR_CODE::SUCCESS) {
+            // Retrieve fused body
+            fusion.retrieveBodies(fused_bodies, body_tracking_runtime_parameters);
+            // for debug, you can retrieve the data send by each camera
+            for (auto& id : cameras)
+                fusion.retrieveBodies(camera_raw_data[id], body_tracking_runtime_parameters, id);
+            // get metrics about the fusion process for monitoring purposes
+            fusion.getProcessMetrics(metrics);
+
 #if DISPLAY_OGL
-            viewer.updateBodies(ptr_data->bodiesData.bodies, ptr_data->bodiesData.singledata, ptr_data->metrics);
+            // update the 3D view
+            viewer.updateBodies(fused_bodies, camera_raw_data, metrics);
 #endif
-            if (ptr_data->bodiesData.bodies.is_new)
+            if (fused_bodies.is_new)
             {
                 try
                 {
-                    std::string data_to_send = getJson(ptr_data->metrics, ptr_data->bodiesData.bodies, BODY_F).dump();
+                    // ----------------------------------
+                    // UDP to Unity----------------------
+                    // ----------------------------------
+                    std::string data_to_send = getJson(metrics, fused_bodies, fused_bodies.body_format).dump();
                     sock.sendTo(data_to_send.data(), data_to_send.size(), servAddress, servPort);
                 }
                 catch (SocketException& e)
@@ -121,9 +182,7 @@ int main(int argc, char **argv) {
                     cerr << e.what() << endl;
                 }
             }
-            ptr_data->bodiesData.mtx.unlock();
         }
-
 
 #if DISPLAY_OGL
         run = viewer.isAvailable();
@@ -135,12 +194,10 @@ int main(int argc, char **argv) {
     viewer.exit();
 #endif
 
-    for (int z = 0; z < z_inputs.size(); z++)
-    {
-        senders[z].stop();
-    }
+    for (auto& it : clients)
+        it.stop();
 
-    fusion.stop();
+    fusion.close();
 
     return EXIT_SUCCESS;
 }
@@ -243,7 +300,7 @@ nlohmann::json getJson(sl::FusionMetrics metrics, sl::Bodies& bodies, sl::BODY_F
     fusionMetricsData["mean_camera_fused"] = metrics.mean_camera_fused;
     fusionMetricsData["mean_stdev_between_camera"] = metrics.mean_stdev_between_camera;
 
-    for (auto& cam : fusion.getCameras())
+    for (auto& cam : cameras)
     {
 
         singleMetricsData["sn"] = cam.sn;
@@ -288,12 +345,12 @@ nlohmann::json getJson(sl::FusionMetrics metrics, sl::Bodies& bodies, sl::BODY_F
 /// ----------------------------------------------------------------------------
 
 
-void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
+void print(string msg_prefix, sl::ERROR_CODE err_code, string msg_suffix) {
     cout << "[Sample]";
-    if (err_code != ERROR_CODE::SUCCESS)
+    if (err_code != sl::ERROR_CODE::SUCCESS)
         cout << "[Error]";
     cout << " " << msg_prefix << " ";
-    if (err_code != ERROR_CODE::SUCCESS) {
+    if (err_code != sl::ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";
         cout << toVerbose(err_code);
     }
