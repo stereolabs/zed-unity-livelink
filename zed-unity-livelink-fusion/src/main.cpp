@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
                     // ----------------------------------
                     // UDP to Unity----------------------
                     // ----------------------------------
-                    std::string data_to_send = getJson(metrics, fused_bodies, BODY_FORMAT).dump();
+                    std::string data_to_send = getJson(metrics, fused_bodies, fused_bodies.body_format).dump();
                     sock.sendTo(data_to_send.data(), data_to_send.size(), servAddress, servPort);
                 }
                 catch (SocketException& e)
