@@ -7,7 +7,7 @@ using System.Collections.Generic;
 /// 
 /// </summary>
 [DisallowMultipleComponent]
-public class ZEDSkeletonTrackingManager : MonoBehaviour
+public class ZEDBodyTrackingManager : MonoBehaviour
 {
     #region vars
     /// <summary>
@@ -19,6 +19,13 @@ public class ZEDSkeletonTrackingManager : MonoBehaviour
     /// </summary>
     [Tooltip("Display 3D avatar. If set to false, only display bones and joint")]
     public bool enableAvatar = true;
+
+    /// <summary>
+    /// Maximum number of detection displayed in the scene.
+    /// </summary>
+    [Tooltip("Maximum number of detections spawnable in the scene")]
+    public int maximumNumberOfDetections = 75;
+
     /// <summary>
     /// Avatar game objects
     /// </summary>
@@ -105,12 +112,15 @@ public class ZEDSkeletonTrackingManager : MonoBehaviour
                 }
                 else
                 {
-                    SkeletonHandler handler = ScriptableObject.CreateInstance<SkeletonHandler>();
-                    Vector3 spawnPosition = bodyData.position;
-                    handler.Create(avatars[Random.Range(0,avatars.Length)], bodies.body_format);
-                    handler.InitSkeleton(person_id, new Material(skeletonBaseMaterial));
-                    avatarControlList.Add(person_id, handler);
-                    UpdateAvatarControl(handler, bodyData);
+                    if (avatarControlList.Count < maximumNumberOfDetections)
+                    {
+                        SkeletonHandler handler = ScriptableObject.CreateInstance<SkeletonHandler>();
+                        Vector3 spawnPosition = bodyData.position;
+                        handler.Create(avatars[Random.Range(0, avatars.Length)], bodies.body_format);
+                        handler.InitSkeleton(person_id, new Material(skeletonBaseMaterial));
+                        avatarControlList.Add(person_id, handler);
+                        UpdateAvatarControl(handler, bodyData);
+                    }
                 }
             }
 		}
