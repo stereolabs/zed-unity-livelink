@@ -197,91 +197,6 @@ int main(int argc, char **argv) {
 /// ----------------------------------------------------------------------------
 /// ----------------------------------------------------------------------------
 
-// If the sender encounter NaN values, it sends 0 instead.
-nlohmann::json bodyDataToJsonMeter(sl::BodyData body)
-{
-    nlohmann::json res;
-
-    res["id"] = body.id;
-    res["tracking_state"] = body.tracking_state;
-    res["action_state"] = body.action_state;
-
-    res["position"] = nlohmann::json::object();
-    res["position"]["x"] = isnan(body.position.x) ? 0 : body.position.x;
-    res["position"]["y"] = isnan(body.position.y) ? 0 : body.position.y;
-    res["position"]["z"] = isnan(body.position.z) ? 0 : body.position.z;
-
-    res["velocity"] = nlohmann::json::object();
-    res["velocity"]["x"] = isnan(body.velocity.x) ? 0 : body.velocity.x;
-    res["velocity"]["y"] = isnan(body.velocity.y) ? 0 : body.velocity.y;
-    res["velocity"]["z"] = isnan(body.velocity.z) ? 0 : body.velocity.z;
-
-    res["confidence"] = isnan(body.confidence) ? 0 : body.confidence;
-
-    res["bounding_box"] = nlohmann::json::array();
-    for (auto& i : body.bounding_box) {
-        nlohmann::json e;
-        e["x"] = isnan(i.x) ? 0 : i.x;
-        e["y"] = isnan(i.y) ? 0 : i.y;
-        e["z"] = isnan(i.z) ? 0 : i.z;
-        res["bounding_box"].push_back(e);
-    }
-
-    res["dimensions"] = nlohmann::json::object();
-    res["dimensions"]["x"] = isnan(body.dimensions.x) ? 0 : body.dimensions.x;
-    res["dimensions"]["y"] = isnan(body.dimensions.y) ? 0 : body.dimensions.y;
-    res["dimensions"]["z"] = isnan(body.dimensions.z) ? 0 : body.dimensions.z;
-
-    res["keypoint"] = nlohmann::json::array();
-    for (auto& i : body.keypoint) {
-        nlohmann::json e;
-        e["x"] = isnan(i.x) ? 0 : i.x;
-        e["y"] = isnan(i.y) ? 0 : i.y;
-        e["z"] = isnan(i.z) ? 0 : i.z;
-        res["keypoint"].push_back(e);
-    }
-
-    res["keypoint_confidence"] = nlohmann::json::array();
-    for (auto& i : body.keypoint_confidence)
-    {
-        res["keypoint_confidence"].push_back(isnan(i) ? 0 : i);
-    }
-    res["local_position_per_joint"] = nlohmann::json::array();
-    for (auto& i : body.local_position_per_joint)
-    {
-        nlohmann::json e;
-        e["x"] = isnan(i.x) ? 0 : i.x;
-        e["y"] = isnan(i.y) ? 0 : i.y;
-        e["z"] = isnan(i.z) ? 0 : i.z;
-        res["local_position_per_joint"].push_back(e);
-    }
-    res["local_orientation_per_joint"] = nlohmann::json::array();
-    for (auto& i : body.local_orientation_per_joint)
-    {
-        nlohmann::json e;
-        e["x"] = isnan(i.x) ? 0 : i.x;
-        e["y"] = isnan(i.y) ? 0 : i.y;
-        e["z"] = isnan(i.z) ? 0 : i.z;
-        e["w"] = isnan(i.w) ? 1 : i.w;
-        res["local_orientation_per_joint"].push_back(e);
-        if(isnan(i.x) || isnan(i.y) || isnan(i.z) || isnan(i.w)) { std::cout << "Nan value in quat." << std::endl; }
-    }
-    res["global_root_orientation"] = nlohmann::json::object();
-    res["global_root_orientation"]["x"] = isnan(body.global_root_orientation.x) ? 0 : body.global_root_orientation.x;
-    res["global_root_orientation"]["y"] = isnan(body.global_root_orientation.y) ? 0 : body.global_root_orientation.y;
-    res["global_root_orientation"]["z"] = isnan(body.global_root_orientation.z) ? 0 : body.global_root_orientation.z;
-    res["global_root_orientation"]["w"] = isnan(body.global_root_orientation.w) ? 0 : body.global_root_orientation.w;
-    return res;
-}
-
-
-
-/// ----------------------------------------------------------------------------
-/// ----------------------------------------------------------------------------
-/// ----------------------------- MISC & MONO-CAM ------------------------------
-/// ----------------------------------------------------------------------------
-/// ----------------------------------------------------------------------------
-
 
 void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     cout << "[Sample]";
@@ -339,23 +254,12 @@ nlohmann::json bodyDataToJson(sl::BodyData body)
     res["position"]["x"] = isnan(body.position.x) ? 0 : body.position.x / 1000;
     res["position"]["y"] = isnan(body.position.y) ? 0 : body.position.y / 1000;
     res["position"]["z"] = isnan(body.position.z) ? 0 : body.position.z / 1000;
+
     res["velocity"] = nlohmann::json::object();
     res["velocity"]["x"] = isnan(body.velocity.x) ? 0 : body.velocity.x / 1000;
     res["velocity"]["y"] = isnan(body.velocity.y) ? 0 : body.velocity.y / 1000;
     res["velocity"]["z"] = isnan(body.velocity.z) ? 0 : body.velocity.z / 1000;
-    //res["position_covariance"] = nlohmann::json::array();
-    //for (auto& i : body.position_covariance) 
-    // {
-    //    res["position_covariance"].push_back(i);
-    //}
-    //res["bounding_box_2d"] = nlohmann::json::array();
-    //for (auto& i : body.bounding_box_2d) 
-    // {
-    //    nlohmann::json e;
-    //    e["x"] = i.x;
-    //    e["y"] = i.y;
-    //    res["bounding_box_2d"].push_back(e);
-    //}
+
     res["confidence"] = isnan(body.confidence) ? 0 : body.confidence;
     res["bounding_box"] = nlohmann::json::array();
     for (auto& i : body.bounding_box) {
@@ -369,14 +273,7 @@ nlohmann::json bodyDataToJson(sl::BodyData body)
     res["dimensions"]["x"] = isnan(body.dimensions.x) ? 0 : body.dimensions.x / 1000;
     res["dimensions"]["y"] = isnan(body.dimensions.y) ? 0 : body.dimensions.y / 1000;
     res["dimensions"]["z"] = isnan(body.dimensions.z) ? 0 : body.dimensions.z / 1000;
-    //res["keypoint_2d"] = nlohmann::json::array();
-    //for (auto& i : body.keypoint_2d) 
-    // {
-    //    nlohmann::json e;
-    //    e["x"] = i.x;
-    //    e["y"] = i.y;
-    //    res["keypoint_2d"].push_back(e);
-    //}
+
     res["keypoint"] = nlohmann::json::array();
     for (auto& i : body.keypoint) {
         nlohmann::json e;
@@ -385,28 +282,7 @@ nlohmann::json bodyDataToJson(sl::BodyData body)
         e["z"] = isnan(i.z) ? 0 : i.z / 1000;
         res["keypoint"].push_back(e);
     }
-    //std::cout << "id [" << body.id << "] hips: " << body.keypoint[0] << std::endl;
-    //res["head_bounding_box_2d"] = nlohmann::json::array();
-    //for (auto& i : body.head_bounding_box_2d) 
-    // {
-    //    nlohmann::json e;
-    //    e["x"] = i.x;
-    //    e["y"] = i.y;
-    //    res["head_bounding_box_2d"].push_back(e);
-    //}
-    //res["head_bounding_box"] = nlohmann::json::array();
-    //for (auto& i : body.head_bounding_box)
-    //  {
-    //    nlohmann::json e;
-    //    e["x"] = i.x;
-    //    e["y"] = i.y;
-    //    e["z"] = i.z;
-    //    res["head_bounding_box"].push_back(e);
-    //}
-    //res["head_position"] = nlohmann::json::object();
-    //res["head_position"]["x"] = body.head_position.x;
-    //res["head_position"]["y"] = body.head_position.y;
-    //res["head_position"]["z"] = body.head_position.z;
+
     res["keypoint_confidence"] = nlohmann::json::array();
     for (auto& i : body.keypoint_confidence)
     {
