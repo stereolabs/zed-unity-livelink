@@ -97,19 +97,6 @@ public class ZEDSkeletonAnimator : MonoBehaviour
 
     #endregion
 
-    #region debug vars
-
-    [Header("Debug")]
-    public float targetLerpPosMultiplier = 1f;
-    public Color colorAnkleRBeforeMove = Color.white;
-    public Color colorAnkleRPlusHeightOffset = Color.gray;
-    public Color colorAnkleRAfterMove = Color.black;
-
-    private Vector3 posStartRay = Vector3.zero;
-    private Vector3 posHitRay = Vector3.zero;
-
-    #endregion
-
     private void Awake()
     {
         bodyTrackingManager = (ZEDBodyTrackingManager)FindObjectOfType(typeof(ZEDBodyTrackingManager));
@@ -221,14 +208,9 @@ public class ZEDSkeletonAnimator : MonoBehaviour
                         // move foot target
                         effectorTargetPos = AccumulateLerpVec3(startLerpPosL, targetLerpPosL, ref curTValL, ref curLerpTimeL);
 
-                        posStartRay = effectorTargetPos + (Vector3.up * (groundedL ? thresholdLeaveGroundedState : thresholdEnterGroundedState));
-                        posHitRay = posStartRay + (Vector3.down * 2 * (groundedL ? thresholdLeaveGroundedState : thresholdEnterGroundedState));
-
                         Ray ray = new Ray(effectorTargetPos + (Vector3.up * (groundedL ? thresholdLeaveGroundedState : thresholdEnterGroundedState)), Vector3.down);
                         if (Physics.Raycast(ray, out RaycastHit hit, 2 * (groundedL ? thresholdLeaveGroundedState : thresholdEnterGroundedState), raycastDetectionLayers))
                         {
-                            posHitRay = hit.point;
-                            colorAnkleRAfterMove = Color.white;
                             effectorTargetPos = CustomInterp(startLerpPosL, hit.point + ankleHeightOffset, ref curLerpTimeL);
                             normalL = hit.normal;
                             groundedL = true;
@@ -239,7 +221,6 @@ public class ZEDSkeletonAnimator : MonoBehaviour
                         }
                         else
                         {
-                            colorAnkleRAfterMove = Color.black;
                             groundedL = false;
                             normalL = animator.GetBoneTransform(HumanBodyBones.LeftFoot).up;
                             animator.SetIKRotation(
@@ -427,13 +408,34 @@ public class ZEDSkeletonAnimator : MonoBehaviour
         }
     }
 
-    private void OnDrawGizmosSelected()
+    /// -----------------------------------------
+    /// ------------ UPPER BODY MODE ------------
+    /// -----------------------------------------
+
+
+    public void UpdateNavigationAndLegAnimationData()
     {
-        Gizmos.color = groundedL ? Color.red : Color.green;
-        Gizmos.DrawSphere(targetLerpPosL, .10f);
-        Gizmos.color = colorAnkleRBeforeMove;
-        Gizmos.DrawCube(posStartRay, new Vector3(.25f, .05f, .25f));
-        Gizmos.color = colorAnkleRAfterMove;
-        Gizmos.DrawSphere(posHitRay, .05f);
+        // Stabilize Y position
+        RaycastHit raycastHit = new RaycastHit();
+        if (Physics.Raycast(skhandler.TargetBodyPositionWithHipOffset + new Vector3(0,1,0),
+            Vector3.down, out raycastHit, 3f))
+        {
+            transform.position = new Vector3(skhandler.TargetBodyPositionWithHipOffset.x, raycastHit.point.y, skhandler.TargetBodyPositionWithHipOffset.z);
+        } else
+        {
+            transform.position = new Vector3 (skhandler.TargetBodyPositionWithHipOffset.x, 0, skhandler.TargetBodyPositionWithHipOffset.z);
+        }
+
+
+        // Take only rotation on Y axis.
+        transform.rotation = Quaternion.Euler(0,skhandler.TargetBodyOrientation.eulerAngles.y,0);
+
+        // Find anim speed depending on if going forward or backward
+        float sc = Vector3.Dot(transform.forward, skhandler.rootVelocity);
+        float animSpeed = sc >= 0 
+            ? skhandler.rootVelocity.magnitude 
+            : -1f * skhandler.rootVelocity.magnitude; 
+
+        animator.SetFloat("Forward", animSpeed, 0.1f, Time.deltaTime);
     }
 }

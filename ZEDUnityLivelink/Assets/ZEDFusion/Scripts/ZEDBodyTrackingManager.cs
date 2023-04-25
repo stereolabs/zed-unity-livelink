@@ -9,6 +9,12 @@ using System.Collections.Generic;
 [DisallowMultipleComponent]
 public class ZEDBodyTrackingManager : MonoBehaviour
 {
+    public enum BODY_MODE
+    {
+        FULL_BODY = 0,
+        UPPER_BODY = 1
+    }
+
     #region vars
     /// <summary>
     /// Vizualisation mode. Use a 3D model or only display the skeleton
@@ -45,6 +51,9 @@ public class ZEDBodyTrackingManager : MonoBehaviour
 
     [Space(5)]
     [Header("Other settings")]
+    [Tooltip("Which body mode to use: \nFULL_BODY uses the root position to move the avatar and the local rotations to animate all the limbs." +
+        "\nUPPER_BODY uses the navigation system and animates the legs to match the movement in space, and animates the body from the hips and above with the local rotations from the ZED SDK.")]
+    public BODY_MODE bodyMode = BODY_MODE.FULL_BODY;
     [Tooltip("Mirror the animation.")]
     public bool mirrorMode = false;
 
@@ -156,19 +165,40 @@ public class ZEDBodyTrackingManager : MonoBehaviour
         // These rotations are stored, and updated each time data is received from Fusion.
         if (enableAvatar)
         {
-            foreach(var skelet in avatarControlList)
+            if (bodyMode == BODY_MODE.FULL_BODY)
             {
-                skelet.Value.Move();
+                foreach (var skelet in avatarControlList)
+                {
+                    skelet.Value.Move();
+                }
+            }
+            else if (bodyMode == BODY_MODE.UPPER_BODY)
+            {
+                foreach (var skelet in avatarControlList)
+                {
+                    skelet.Value.UpdateNavigationDataUpperBody();
+                }
             }
         }
     }
 
-	/// <summary>
-	/// Function to update avatar control with data from ZED SDK.
-	/// </summary>
-	/// <param name="handler">Handler.</param>
-	/// <param name="data">Body tracking data.</param>
-	private void UpdateAvatarControl(SkeletonHandler handler, sl.BodyData data)
+    private void LateUpdate()
+    {
+        if (bodyMode == BODY_MODE.UPPER_BODY)
+        {
+            foreach (var skelet in avatarControlList)
+            {
+                skelet.Value.UpdateRotationsUpperBody();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Function to update avatar control with data from ZED SDK.
+    /// </summary>
+    /// <param name="handler">Handler.</param>
+    /// <param name="data">Body tracking data.</param>
+    private void UpdateAvatarControl(SkeletonHandler handler, sl.BodyData data)
     {
         if (data.local_orientation_per_joint.Length > 0 && data.keypoint.Length > 0 && data.keypoint_confidence.Length > 0)
         {
@@ -177,6 +207,12 @@ public class ZEDBodyTrackingManager : MonoBehaviour
                 data.keypoint,
                 data.local_orientation_per_joint, data.global_root_orientation,
                 enableAvatar, mirrorMode);
+
+            // Also update velocity for legs animation
+            if (bodyMode == BODY_MODE.UPPER_BODY)
+            {
+                handler.rootVelocity = data.velocity;
+            }
         }
     }
 }
