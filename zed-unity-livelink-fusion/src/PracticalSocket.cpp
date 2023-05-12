@@ -34,6 +34,7 @@ typedef void raw_type;       // Type used for raw data on this platform
 #endif
 
 #include <errno.h>             // For errno
+#include <cstring>             // For memset
 
 #pragma comment(lib, "Ws2_32.lib")
 
