@@ -253,7 +253,7 @@ namespace sl
         BODY_18,
         BODY_34,
         BODY_38,
-        BODY_70,
+        //BODY_70,
     };
 
     public class BodyData
