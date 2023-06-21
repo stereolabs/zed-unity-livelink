@@ -2207,7 +2207,8 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9029239706945640940}
-  m_LocalRotation: {x: 0.00000026126588, y: 0.0000002898029, z: -0.0000151803315, w: 1}
+  m_LocalRotation: {x: 0.00000026126588, y: 0.0000002898029, z: -0.0000151803315,
+    w: 1}
   m_LocalPosition: {x: 0.000001012353, y: 1.0017784, z: -0.011370468}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -2264,8 +2265,8 @@ Animator:
   m_GameObject: {fileID: 9118140948381514423}
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: 66802e5a34626b24dbef0a7ad7ee47ef, type: 3}
-  m_Controller: {fileID: 0}
-  m_CullingMode: 1
+  m_Controller: {fileID: 9100000, guid: 0e5129abaa92ec94e901dfcfec60d39c, type: 2}
+  m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 1
   m_LinearVelocityBlending: 0
@@ -2274,6 +2275,7 @@ Animator:
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!114 &-2591320845243361421
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2286,27 +2288,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90982a9a211eb694ea6d767b43787f56, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enableFootIK: 0
-  filterSlidingMovementsOnGround: 0
   thresholdEnterGroundedState: 0.11
   thresholdLeaveGroundedState: 0.14
-  groundedFreeDistance: 0.08
+  thresholdFootLock: 0.05
   raycastDetectionLayers:
     serializedVersion: 2
     m_Bits: 8
   ikPositionApplicationRatio: 1
   ikRotationApplicationRatio: 1
-  LeftFootTransform: {fileID: 5968356429716412887}
-  RightFootTransform: {fileID: 8807488752933314970}
-  ankleHeightOffset: {x: 0, y: 0.11, z: 0}
-  bodyTrackingManager: {fileID: 0}
-  toggleFootIK: 105
-  toggleFilterSlidingMovementsOnGround: 102
+  ankleHeightOffset: 0.102
   resetAutomaticOffset: 114
-  targetLerpPosMultiplier: 1
-  colorAnkleRBeforeMove: {r: 1, g: 1, b: 1, a: 1}
-  colorAnkleRPlusHeightOffset: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  colorAnkleRAfterMove: {r: 0, g: 0, b: 0, a: 1}
 --- !u!114 &2097042752775652476
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2319,14 +2310,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5f342a22c298724684c5cf06bb61a3c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  manualOffset: {x: 0, y: 0, z: 0}
-  automaticOffset: 0
-  bufferSize_Sec: 2
+  currentAutoHeightOffset: 0
   findFloorDistance: 2
   layersToHit:
     serializedVersion: 2
     m_Bits: 8
-  increaseOffsetKey: 273
-  decreaseOffsetKey: 274
-  toggleAutomaticOffsetKey: 111
-  offsetStep: 0.1
+  thresholdDistCloseToFloor: 0.02
+  thresholdDurationOffsetError: 3
