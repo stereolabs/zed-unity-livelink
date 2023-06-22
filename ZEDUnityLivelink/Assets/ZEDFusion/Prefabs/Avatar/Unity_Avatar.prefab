@@ -2316,4 +2316,4 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 8
   thresholdDistCloseToFloor: 0.02
-  thresholdDurationOffsetError: 3
+  thresholdDurationOffsetError: 2
