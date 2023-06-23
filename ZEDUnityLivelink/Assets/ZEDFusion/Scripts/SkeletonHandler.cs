@@ -914,19 +914,19 @@ public class SkeletonHandler : ScriptableObject
                 currentRightAnkleIndex = JointType_RIGHT_ANKLE;
                 currentKeypointsCount = JointType_38_COUNT;
                 break;
-            //case sl.BODY_FORMAT.BODY_70:
-            //    currentConfidences = confidences70;
-            //    currentJoints = joints70;
-            //    currentHumanBodyBones = humanBones70;
-            //    currentSpheresList = sphereList70;
-            //    currentBonesList = bonesList70;
-            //    currentParentIds = parentsIdx_70;
-            //    currentLeftAnkleIndex = JointType_LEFT_ANKLE;
-            //    currentRightAnkleIndex = JointType_RIGHT_ANKLE;
-            //    currentKeypointsCount = JointType_70_COUNT;
-            //    break;
+            case sl.BODY_FORMAT.BODY_70:
+                currentConfidences = confidences70;
+                currentJoints = joints70;
+                currentHumanBodyBones = humanBones70;
+                currentSpheresList = sphereList70;
+                currentBonesList = bonesList70;
+                currentParentIds = parentsIdx_70;
+                currentLeftAnkleIndex = JointType_LEFT_ANKLE;
+                currentRightAnkleIndex = JointType_RIGHT_ANKLE;
+                currentKeypointsCount = JointType_70_COUNT;
+                break;
             default:
-                Debug.LogError("Error: Invalid BODY_MODEL! Please use either BODY_34 or BODY_38.");
+                Debug.LogError("Error: Invalid BODY_MODEL! Please use either BODY_34, BODY_38 or BODY_70.");
 #if UNITY_EDITOR
                 EditorApplication.ExitPlaymode();
 #else
