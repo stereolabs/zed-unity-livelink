@@ -429,6 +429,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 688287089, guid: 6bd423642e236464196866e274c23689, type: 3}
+      propertyPath: smoothingValue
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 688287089, guid: 6bd423642e236464196866e274c23689, type: 3}
       propertyPath: avatars.Array.data[0]
       value: 
       objectReference: {fileID: 9118140948381514423, guid: c4683ec5e4801bd49b8f51e7eadd6e3d,

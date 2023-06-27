@@ -344,6 +344,31 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 688287089, guid: 6bd423642e236464196866e274c23689, type: 3}
+      propertyPath: enableFootIK
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 688287089, guid: 6bd423642e236464196866e274c23689, type: 3}
+      propertyPath: smoothingValue
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 688287089, guid: 6bd423642e236464196866e274c23689, type: 3}
+      propertyPath: automaticOffset
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 688287089, guid: 6bd423642e236464196866e274c23689, type: 3}
+      propertyPath: avatars.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 688287089, guid: 6bd423642e236464196866e274c23689, type: 3}
+      propertyPath: avatars.Array.data[1]
+      value: 
+      objectReference: {fileID: 1577629577426895579, guid: b2033efe657eddf4bbe61be41cc051bd,
+        type: 3}
+    - target: {fileID: 688287089, guid: 6bd423642e236464196866e274c23689, type: 3}
+      propertyPath: maximumNumberOfDetections
+      value: 15
+      objectReference: {fileID: 0}
     - target: {fileID: 6287004698725560615, guid: 6bd423642e236464196866e274c23689,
         type: 3}
       propertyPath: m_Name
