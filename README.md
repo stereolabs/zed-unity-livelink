@@ -109,7 +109,7 @@ These are located on the `ZED Skeleton Tracking Manager` script in the `Fusion M
 
 ## Support
 You will find guidance and assistance :
-- In the [documentation of the sample](https://www.stereolabs.com/docs/livelink-unity/)
+- In the [documentation of the sample](https://www.stereolabs.com/docs/livelink/livelink-unity/)
 - On our [Community forums](https://community.stereolabs.com/)
 
 ## Bugs and fixes
