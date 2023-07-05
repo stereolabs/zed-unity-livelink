@@ -64,8 +64,8 @@ public class ZEDBodyTrackingManager : MonoBehaviour
 
     [Space(5)]
     [Header("------ Animation Smoothing ------")]
-    [Tooltip("Animation smoothing setting. 0 = No latency, no smoothing. 1 = \"Full latency\" so no movement.\n Tweak this value depending on your framerate, and the fps of the camera."), Range(0f, 1f)]
-    public float smoothingValue = 0f;
+    [Tooltip("Animation smoothing setting. 0 = No latency, no smoothing. 1 = Maximum latency.\n Tweak this value depending on your framerate, and the fps of the camera."), Range(0f, 1f)]
+    public float smoothingValue = .2f;
     [SerializeField]
     [Tooltip("Enable animation smoothing or not (induces latency).")]
     private bool enableSmoothing = true;
