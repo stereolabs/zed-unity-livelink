@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 using UnityEditor;
+using Unity.VisualScripting;
 
 public class SkeletonHandler : ScriptableObject
 {
@@ -962,6 +963,11 @@ public class SkeletonHandler : ScriptableObject
     }
 
     /// <summary>
+    /// Ignore the smoothing on the first frame to not have the lerp from 0-pose as first animation.
+    /// </summary>
+    private bool firstFrame = true;
+
+    /// <summary>
     /// Propagate rotations and set them to the animator.
     /// </summary>   
     public void MoveAnimator(bool smoothingEnabled, float smoothValue)
@@ -1005,20 +1011,7 @@ public class SkeletonHandler : ScriptableObject
         targetBodyOrientationSmoothed = targetBodyOrientation;
 
         // animatorization
-        if (!smoothingEnabled)
-        {
-            foreach (HumanBodyBones bone in currentHumanBodyBones)
-            {
-                if (bone != HumanBodyBones.LastBone && bone != HumanBodyBones.Hips)
-                {
-                    if (rigBone[bone].transform)
-                    {
-                        animator.SetBoneLocalRotation(bone, rigBone[bone].transform.localRotation);
-                    }
-                }
-            }
-        }
-        else // smoothing enabled
+        if (smoothingEnabled && ! firstFrame)
         {
             targetBodyPositionWithHipOffset = Vector3.Lerp(targetBodyPositionLastFrame, targetBodyPositionWithHipOffset, smoothValue);
             targetBodyPositionLastFrame = targetBodyPositionWithHipOffset;
@@ -1044,6 +1037,24 @@ public class SkeletonHandler : ScriptableObject
                     }
                 }
             }
+        }
+        else // smoothing disabled
+        {
+            targetBodyPositionLastFrame = targetBodyPositionWithHipOffset;
+            targetBodyOrientationLastFrame = targetBodyOrientationSmoothed;
+
+            foreach (HumanBodyBones bone in currentHumanBodyBones)
+            {
+                if (bone != HumanBodyBones.LastBone && bone != HumanBodyBones.Hips)
+                {
+                    if (rigBone[bone].transform)
+                    {
+                        animator.SetBoneLocalRotation(bone, rigBone[bone].transform.localRotation);
+                        RigBoneRotationLastFrame[bone] = rigBone[bone].transform.localRotation;
+                    }
+                }
+            }
+            firstFrame = false;
         }
 
     }
