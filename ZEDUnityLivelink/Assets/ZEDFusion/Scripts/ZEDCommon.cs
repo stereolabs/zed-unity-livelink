@@ -106,87 +106,6 @@ namespace sl
         LAST = 38
     };
 
-    /// <summary>
-    /// ssemantic of human body parts and order keypoints for BODY_FORMAT.POSE_34.
-    /// </summary>
-    public enum BODY_PARTS_POSE_70
-    {
-        PELVIS = 0,
-        SPINE_1 = 1,
-        SPINE_2 = 2,
-        SPINE_3 = 3,
-        NECK = 4,
-        NOSE = 5,
-        LEFT_EYE = 6,
-        RIGHT_EYE = 7,
-        LEFT_EAR = 8,
-        RIGHT_EAR = 9,
-        LEFT_CLAVICLE = 10,
-        RIGHT_CLAVICLE = 11,
-        LEFT_SHOULDER = 12,
-        RIGHT_SHOULDER = 13,
-        LEFT_ELBOW = 14,
-        RIGHT_ELBOW = 15,
-        LEFT_WRIST = 16,
-        RIGHT_WRIST = 17,
-        LEFT_HIP = 18,
-        RIGHT_HIP = 19,
-        LEFT_KNEE = 20,
-        RIGHT_KNEE = 21,
-        LEFT_ANKLE = 22,
-        RIGHT_ANKLE = 23,
-        LEFT_BIG_TOE = 24,
-        RIGHT_BIG_TOE = 25,
-        LEFT_SMALL_TOE = 26,
-        RIGHT_SMALL_TOE = 27,
-        LEFT_HEEL = 28,
-        RIGHT_HEEL = 29,
-        // Hands
-        // Left
-        LEFT_HAND_THUMB_1 = 30,
-        LEFT_HAND_THUMB_2 = 31,
-        LEFT_HAND_THUMB_3 = 32,
-        LEFT_HAND_THUMB_4 = 33, // tip
-        LEFT_HAND_INDEX_1 = 34, // knuckle
-        LEFT_HAND_INDEX_2 = 35,
-        LEFT_HAND_INDEX_3 = 36,
-        LEFT_HAND_INDEX_4 = 37, // tip
-        LEFT_HAND_MIDDLE_1 = 38,
-        LEFT_HAND_MIDDLE_2 = 39,
-        LEFT_HAND_MIDDLE_3 = 40,
-        LEFT_HAND_MIDDLE_4 = 41,
-        LEFT_HAND_RING_1 = 42,
-        LEFT_HAND_RING_2 = 43,
-        LEFT_HAND_RING_3 = 44,
-        LEFT_HAND_RING_4 = 45,
-        LEFT_HAND_PINKY_1 = 46,
-        LEFT_HAND_PINKY_2 = 47,
-        LEFT_HAND_PINKY_3 = 48,
-        LEFT_HAND_PINKY_4 = 49,
-        // Right
-        RIGHT_HAND_THUMB_1 = 50,
-        RIGHT_HAND_THUMB_2 = 51,
-        RIGHT_HAND_THUMB_3 = 52,
-        RIGHT_HAND_THUMB_4 = 53,
-        RIGHT_HAND_INDEX_1 = 54,
-        RIGHT_HAND_INDEX_2 = 55,
-        RIGHT_HAND_INDEX_3 = 56,
-        RIGHT_HAND_INDEX_4 = 57,
-        RIGHT_HAND_MIDDLE_1 = 58,
-        RIGHT_HAND_MIDDLE_2 = 59,
-        RIGHT_HAND_MIDDLE_3 = 60,
-        RIGHT_HAND_MIDDLE_4 = 61,
-        RIGHT_HAND_RING_1 = 62,
-        RIGHT_HAND_RING_2 = 63,
-        RIGHT_HAND_RING_3 = 64,
-        RIGHT_HAND_RING_4 = 65,
-        RIGHT_HAND_PINKY_1 = 66,
-        RIGHT_HAND_PINKY_2 = 67,
-        RIGHT_HAND_PINKY_3 = 68,
-        RIGHT_HAND_PINKY_4 = 69,
-        LAST = 70
-    };
-
     public enum OBJECT_TRACK_STATE
     {
         OFF, /**< The tracking is not yet initialized, the object ID is not usable */
@@ -252,8 +171,7 @@ namespace sl
     {
         BODY_18,
         BODY_34,
-        BODY_38,
-        BODY_70,
+        BODY_38
     };
 
     public class BodyData
