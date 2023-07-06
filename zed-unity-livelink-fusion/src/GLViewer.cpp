@@ -287,9 +287,6 @@ void GLViewer::addSKeleton(sl::BodyData& obj, Simple3DObject& simpleObj, sl::flo
     case sl::BODY_FORMAT::BODY_38:
         createSKPrimitive(obj, sl::BODY_38_BONES, simpleObj, clr_id, raw);
         break;
-    case sl::BODY_FORMAT::BODY_70:
-        createSKPrimitive(obj, sl::BODY_70_BONES, simpleObj, clr_id, raw);
-        break;
     }
 }
 
@@ -305,9 +302,6 @@ void GLViewer::addSKeleton(sl::BodyData& obj, Simple3DObject& simpleObj, sl::flo
         break;
     case 38:
         createSKPrimitive(obj, sl::BODY_38_BONES, simpleObj, clr_id, raw);
-        break;
-    case 70:
-        createSKPrimitive(obj, sl::BODY_70_BONES, simpleObj, clr_id, raw);
         break;
     }
 }

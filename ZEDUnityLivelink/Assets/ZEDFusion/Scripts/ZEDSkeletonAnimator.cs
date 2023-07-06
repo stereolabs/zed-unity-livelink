@@ -258,7 +258,7 @@ public class ZEDSkeletonAnimator : MonoBehaviour
     {
         if(bodyTrackingManager.bodyMode == ZEDBodyTrackingManager.BODY_MODE.FULL_BODY)
         {
-            skhandler.MoveAnimator(bodyTrackingManager.EnableSmoothing, Mathf.Clamp(1 - bodyTrackingManager.smoothingValue, 0, 1));
+            skhandler.MoveAnimator(bodyTrackingManager.EnableSmoothing, 1 - Mathf.Clamp(bodyTrackingManager.smoothingValue, 0, 0.99f));
         } 
         else if(bodyTrackingManager.bodyMode == ZEDBodyTrackingManager.BODY_MODE.UPPER_BODY)
         {
