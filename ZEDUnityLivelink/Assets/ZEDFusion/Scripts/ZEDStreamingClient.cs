@@ -68,7 +68,6 @@ public class ZEDStreamingClient : MonoBehaviour
 
     void ParsePacket()
     {
-
         if (receivedDataBuffer.Count == bufferSize) receivedDataBuffer.RemoveFirst();
         receivedDataBuffer.AddLast(receivedBytes);
         newDataAvailable = true;
