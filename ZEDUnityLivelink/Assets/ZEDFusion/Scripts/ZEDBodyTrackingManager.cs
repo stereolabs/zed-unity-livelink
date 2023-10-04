@@ -187,9 +187,12 @@ public class ZEDBodyTrackingManager : MonoBehaviour
             }
             else if (bodyData.tracking_state == OBJECT_TRACK_STATE.TERMINATE) // detection lost, destroy gameobject.
             {
-                SkeletonHandler handler = avatarControlList[person_id];
-                handler.Destroy();
-                avatarControlList.Remove(person_id);
+                if (avatarControlList.ContainsKey(person_id))
+                {
+                    SkeletonHandler handler = avatarControlList[person_id];
+                    handler.Destroy();
+                    avatarControlList.Remove(person_id);
+                }
             }
         }
 
