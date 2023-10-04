@@ -2,6 +2,11 @@
 
 using UnityEngine;
 using System.Collections.Generic;
+using sl;
+using System.Collections;
+using System;
+using System.Linq;
+using static UnityEngine.Rendering.DebugUI.Table;
 
 /// <summary>
 /// 
@@ -81,6 +86,10 @@ public class ZEDBodyTrackingManager : MonoBehaviour
     [Tooltip("Foot locking smoothing setting. 0 = No latency, no smoothing. 1 = \"Full latency\" so no movement.\n Tweak this value depending on your framerate, and the fps of the camera.\nValues closer to 1 induce more latency, but improve fluidity."), Range(0f, 1f)]
     public float footLockingSmoothingValue = .8f;
 
+    [Tooltip("Delay before spawning an avatar. At the end, the tracking state is checked, and if the filters pass then the avatar is spawned.\n" +
+    "Use this to reduce popups of avatars in case of partial occlusion/tracked people at the edges of the ZED's frustum.")]
+    public float delayBeforeSpawn = 0.5f;
+
     [Space(5)]
     [Header("------ Keyboard mapping ------")]
     public KeyCode toggleFootIK = KeyCode.I;
@@ -123,50 +132,78 @@ public class ZEDBodyTrackingManager : MonoBehaviour
         }
     }
 
-	/// <summary>
-	/// Updates the skeleton data from ZEDCamera call and send it to Skeleton Handler script.
-	/// </summary>
+    /// <summary>
+    /// Coroutine to spawn an avatar only after it's been detected for a set duration.
+    /// </summary>
+    /// <returns></returns>
+    IEnumerator InstanciateAvatarWithDelay(float delay, BodyData dbody, BODY_FORMAT bodyFormat)
+    {
+        SkeletonHandler handler = ScriptableObject.CreateInstance<SkeletonHandler>();
+        handler.Create(avatars[UnityEngine.Random.Range(0, avatars.Length)], bodyFormat);
+        handler.InitSkeleton(dbody.id, new Material(skeletonBaseMaterial));
+
+        avatarControlList.Add(dbody.id, handler);
+        float unixTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        UpdateAvatarControl(handler, dbody);
+        handler.GetAnimator().gameObject.SetActive(false);
+        yield return new WaitForSeconds(delay);
+
+        if (avatarControlList.ContainsKey(dbody.id)) handler.zedSkeletonAnimator.canSpawn = true;
+    }
+
+
+    /// <summary>
+    /// Updates the skeleton data from ZEDCamera call and send it to Skeleton Handler script.
+    /// </summary>
     private void UpdateSkeletonData(sl.Bodies bodies)
     {
-		List<int> remainingKeyList = new List<int>(avatarControlList.Keys);
-		List<sl.BodyData> newBodies = new List<sl.BodyData>(bodies.body_list);
+        List<int> remainingKeyList = new List<int>(avatarControlList.Keys);
+        List<sl.BodyData> newBodies = new List<sl.BodyData>(bodies.body_list);
+
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        float unixTime = now.ToUnixTimeMilliseconds();
 
         foreach (sl.BodyData bodyData in newBodies)
         {
-			int person_id = bodyData.id;
+            int person_id = bodyData.id;
 
             if (bodyData.tracking_state == sl.OBJECT_TRACK_STATE.OK)
             {
                 //Avatar controller already exist --> update position
                 if (avatarControlList.ContainsKey(person_id))
                 {
-                    SkeletonHandler handler = avatarControlList[person_id];
-                    UpdateAvatarControl(handler, bodyData);
-
                     // remove keys from list
                     remainingKeyList.Remove(person_id);
+                    SkeletonHandler handler = avatarControlList[person_id];
+                    UpdateAvatarControl(handler, bodyData);
                 }
                 else
                 {
                     if (avatarControlList.Count < maximumNumberOfDetections)
                     {
-                        SkeletonHandler handler = ScriptableObject.CreateInstance<SkeletonHandler>();
-                        Vector3 spawnPosition = bodyData.position;
-                        handler.Create(avatars[Random.Range(0, avatars.Length)], bodies.body_format);
-                        handler.InitSkeleton(person_id, new Material(skeletonBaseMaterial));
-                        avatarControlList.Add(person_id, handler);
-                        UpdateAvatarControl(handler, bodyData);
+                        StartCoroutine(InstanciateAvatarWithDelay(delayBeforeSpawn, bodyData, bodies.body_format));
                     }
                 }
             }
-		}
+            else if (bodyData.tracking_state == OBJECT_TRACK_STATE.TERMINATE) // detection lost, destroy gameobject.
+            {
+                if (avatarControlList.ContainsKey(person_id))
+                {
+                    SkeletonHandler handler = avatarControlList[person_id];
+                    handler.Destroy();
+                    avatarControlList.Remove(person_id);
+                }
+            }
+        }
 
-        foreach (int index in remainingKeyList)
+        /*foreach (int index in remainingKeyList)
 		{
 			SkeletonHandler handler = avatarControlList[index];
 			handler.Destroy();
 			avatarControlList.Remove(index);
-		}
+            avatarLastSeenTime.Remove(index);
+
+        }*/
     }
 
 	public void Update()
@@ -224,7 +261,7 @@ public class ZEDBodyTrackingManager : MonoBehaviour
         // Display avatars or not depending on useAvatar setting.
         foreach (var skelet in avatarControlList)
         {
-            skelet.Value.GetAnimator().gameObject.SetActive(enableAvatar);
+            skelet.Value.zedSkeletonAnimator.TryShowAvatar(enableAvatar);
         }
     }
 

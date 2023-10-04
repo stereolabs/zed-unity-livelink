@@ -19,7 +19,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 // OpenGL Viewer(!=0) or no viewer (0)
-#define DISPLAY_OGL 1
+#define DISPLAY_OGL 0
 
 // ZED include
 #include "GLViewer.hpp"
@@ -31,6 +31,8 @@
 using namespace sl;
 
 nlohmann::json getJson(sl::Camera& pcamera, sl::Bodies& bodies, sl::BODY_FORMAT body_format);
+nlohmann::json getJson(sl::Camera& pcamera, sl::Bodies& bodies, int id, sl::BODY_FORMAT body_format);
+
 nlohmann::json bodyDataToJson(sl::BodyData body);
 void parseArgsMonoCam(int argc, char** argv, InitParameters& param);
 void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
@@ -116,9 +118,9 @@ int main(int argc, char **argv) {
     unsigned short servPort;
     UDPSocket sock;
 
-    sock.setMulticastTTL(1);
+    //sock.setMulticastTTL(1);
 
-    servAddress = "230.0.0.1";
+    servAddress = "127.0.0.1";
     servPort = 20001;
 
     std::cout << "Sending fused data at " << servAddress << ":" << servPort << std::endl;
@@ -138,7 +140,6 @@ int main(int argc, char **argv) {
         {
             // Retrieve Detected Human Bodies
             zed.retrieveBodies(bodies, body_tracker_parameters_rt);
-
 #if DISPLAY_OGL
             //Update GL View
             viewer.updateData(bodies, cam_pose.pose_data);
@@ -147,9 +148,14 @@ int main(int argc, char **argv) {
             if (bodies.is_new) {
                 try
                 {
-                    std::string data_to_send = getJson(zed, bodies, body_tracker_params.body_format).dump();
                     //std::cout << "Size of data to send " << data_to_send.size() << std::endl;
-                    sock.sendTo(data_to_send.data(), data_to_send.size(), servAddress, servPort);
+                    for (int i = 0; i < bodies.body_list.size(); i++)
+                    {
+                        std::string data_to_send = getJson(zed, bodies, i, body_tracker_params.body_format).dump();
+                        sock.sendTo(data_to_send.data(), data_to_send.size(), servAddress, servPort);
+
+                        sl::sleep_us(100);
+                    }
                 }
                 catch (SocketException& e)
                 {
@@ -234,6 +240,37 @@ nlohmann::json getJson(sl::Camera& pcamera, sl::Bodies& bodies, sl::BODY_FORMAT 
     for (auto& body : bodies.body_list)
     {
         bodyData["body_list"].push_back(bodyDataToJson(body));
+    }
+
+    j["bodies"] = bodyData;
+
+    return j;
+}
+
+
+// send one skeleton at a time
+nlohmann::json getJson(sl::Camera& pcamera, sl::Bodies& bodies, int id, sl::BODY_FORMAT body_format)
+{
+    Pose camp;
+    pcamera.getPosition(camp);
+    ///std::cout << "camera position : " << camp.getTranslation() << std::endl;
+
+    nlohmann::json j;
+
+    nlohmann::json bodyData;
+
+    bodyData["body_format"] = body_format;
+    bodyData["is_new"] = (int)bodies.is_new;
+    bodyData["is_tracked"] = (int)bodies.is_tracked;
+    bodyData["timestamp"] = bodies.timestamp.data_ns;
+
+    bodyData["nb_object"] = bodies.body_list.size();
+    bodyData["body_list"] = nlohmann::json::array();
+
+
+    if (id < bodies.body_list.size())
+    {
+        bodyData["body_list"].push_back(bodyDataToJson(bodies.body_list[id]));
     }
 
     j["bodies"] = bodyData;

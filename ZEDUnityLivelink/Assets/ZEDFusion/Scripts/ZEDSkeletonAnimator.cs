@@ -245,6 +245,17 @@ public class ZEDSkeletonAnimator : MonoBehaviour
 
     #endregion
 
+    #region Delayed Spawn
+
+    [HideInInspector]
+    public bool canSpawn = true;
+    public void TryShowAvatar(bool newVisibility)
+    {
+        gameObject.SetActive(canSpawn && newVisibility);
+    }
+
+    #endregion
+
 
     /// --------------------------------------------
     /// -----------------Main Pipeline--------------

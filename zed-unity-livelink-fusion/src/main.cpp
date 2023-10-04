@@ -29,6 +29,8 @@
 #include <sl/Camera.hpp>
 
 nlohmann::json getJson(sl::FusionMetrics metrics, sl::Bodies& bodies, sl::BODY_FORMAT body_format);
+nlohmann::json getJson(sl::FusionMetrics metrics, sl::Bodies& bodies, int id, sl::BODY_FORMAT body_format);
+
 nlohmann::json bodyDataToJson(sl::BodyData body);
 void print(string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, string msg_suffix = "");
 
@@ -173,8 +175,15 @@ int main(int argc, char **argv) {
                     // ----------------------------------
                     // UDP to Unity----------------------
                     // ----------------------------------
-                    std::string data_to_send = getJson(metrics, fused_bodies, fused_bodies.body_format).dump();
-                    sock.sendTo(data_to_send.data(), data_to_send.size(), servAddress, servPort);
+
+                    // send body data one at a time instead of as one single packet.
+                    for (int i = 0; i < fused_bodies.body_list.size(); i++)
+                    {
+                        std::string data_to_send = getJson(metrics, fused_bodies, i, fused_bodies.body_format).dump();
+                        sock.sendTo(data_to_send.data(), data_to_send.size(), servAddress, servPort);
+                        sl::sleep_us(100);
+
+                    }
                 }
                 catch (SocketException& e)
                 {
@@ -329,6 +338,56 @@ nlohmann::json getJson(sl::FusionMetrics metrics, sl::Bodies& bodies, sl::BODY_F
         if (body.local_orientation_per_joint.size() == 0)
         {
             std::cout << "Detected body[" << body.id << "] has empty jointsOrientation, with tracking state : " << body.tracking_state << std::endl;
+        }
+    }
+
+    j["fusionMetrics"] = fusionMetricsData;
+    j["bodies"] = bodyData;
+
+    return j;
+}
+
+// Create the json sent to the clients
+nlohmann::json getJson(sl::FusionMetrics metrics, sl::Bodies& bodies, int id, sl::BODY_FORMAT body_format)
+{
+    nlohmann::json j;
+
+    nlohmann::json bodyData;
+    nlohmann::json fusionMetricsData;
+    nlohmann::json singleMetricsData;
+
+    fusionMetricsData["mean_camera_fused"] = metrics.mean_camera_fused;
+    fusionMetricsData["mean_stdev_between_camera"] = metrics.mean_stdev_between_camera;
+
+    for (auto& cam : cameras)
+    {
+
+        singleMetricsData["sn"] = cam.sn;
+        singleMetricsData["received_fps"] = metrics.camera_individual_stats[cam.sn].received_fps;
+        singleMetricsData["received_latency"] = metrics.camera_individual_stats[cam.sn].received_latency;
+        singleMetricsData["synced_latency"] = metrics.camera_individual_stats[cam.sn].synced_latency;
+        singleMetricsData["is_present"] = metrics.camera_individual_stats[cam.sn].is_present;
+        singleMetricsData["ratio_detection"] = metrics.camera_individual_stats[cam.sn].ratio_detection;
+        singleMetricsData["delta_ts"] = metrics.camera_individual_stats[cam.sn].delta_ts;
+
+        fusionMetricsData["camera_individual_stats"].push_back(singleMetricsData);
+    }
+
+    bodyData["body_format"] = body_format;
+
+    bodyData["is_new"] = (int)bodies.is_new;
+    bodyData["is_tracked"] = (int)bodies.is_tracked;
+    bodyData["timestamp"] = bodies.timestamp.data_ns;
+
+    bodyData["nb_object"] = bodies.body_list.size();
+    bodyData["body_list"] = nlohmann::json::array();
+
+    if (id < bodies.body_list.size())
+    {
+        bodyData["body_list"].push_back(bodyDataToJsonMeter(bodies.body_list[id]));
+        if (bodies.body_list[id].local_orientation_per_joint.size() == 0)
+        {
+            std::cout << "Detected body[" << bodies.body_list[id].id << "] has empty jointsOrientation, with tracking state : " << bodies.body_list[id].tracking_state << std::endl;
         }
     }
 
