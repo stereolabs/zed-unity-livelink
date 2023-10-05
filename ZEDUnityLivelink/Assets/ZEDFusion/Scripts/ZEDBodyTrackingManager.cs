@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using sl;
 using System.Collections;
 using System;
-using System.Linq;
-using static UnityEngine.Rendering.DebugUI.Table;
 
 /// <summary>
 /// 

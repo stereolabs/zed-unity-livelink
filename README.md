@@ -19,6 +19,7 @@ The data is broadcast via UDP on a specified port, and can be received using the
 - **Unity 2021.3** and more recent versions, available on [unity.com](https://unity.com/download)
     - It will probably work well with older versions, as its core is an UDP receiver which animates an Humanoid avatar, but has not been tested with them.
     - You may encounter an error about the package **Newtonsoft** not being installed at first launch. With versions 2022.x and more recent of Unity, it should not happen, but in any case please refer to [the Newtonsoft repo](https://github.com/jilleJr/Newtonsoft.Json-for-Unity/wiki/Install-official-via-UPM) for installation instructions with Unity Package Manager.
+- **Universal Render Pipeline (URP)**: The Unity project is built on URP, however this is not blocking if you want to use another render pipeline as there is no deep shader compatibility issues, just some materials to update.
 
 ### Difference with the ZED Unity Plugin
 
