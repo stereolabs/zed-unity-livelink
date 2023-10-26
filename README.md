@@ -115,6 +115,13 @@ These are located on the `ZED Skeleton Tracking Manager` script in the `Fusion M
 - `Enable SDK Skeleton` : controls the visibility of the stickman view of the SDK keypoints. Whereas the 3D avatar is animated using local rotations derived from the keypoints, this show the actual positions of the keypoints detected by the SDK.
 - `Log Fusion Metrics` : enables logging the metrics sent by the Fusion module in the console.
 
+### Troubleshooting
+
+If no skeleton data is received in Unity, you can either try to :
+
+- Disable your firewall.
+- Change the port used to send the data, it might already be used by another process.
+
 ## Support
 You will find guidance and assistance :
 - In the [documentation of the sample](https://www.stereolabs.com/docs/livelink/livelink-unity/)
