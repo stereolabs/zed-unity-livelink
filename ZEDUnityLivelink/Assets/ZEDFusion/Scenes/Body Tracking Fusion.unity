@@ -345,8 +345,20 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 688287088, guid: 6bd423642e236464196866e274c23689, type: 3}
+      propertyPath: port
+      value: 2000
+      objectReference: {fileID: 0}
+    - target: {fileID: 688287088, guid: 6bd423642e236464196866e274c23689, type: 3}
       propertyPath: useMulticast
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 688287088, guid: 6bd423642e236464196866e274c23689, type: 3}
+      propertyPath: ConnectionType
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 688287088, guid: 6bd423642e236464196866e274c23689, type: 3}
+      propertyPath: multicastIpAddress
+      value: 230.0.0.1
       objectReference: {fileID: 0}
     - target: {fileID: 688287089, guid: 6bd423642e236464196866e274c23689, type: 3}
       propertyPath: enableFootIK
@@ -363,6 +375,10 @@ PrefabInstance:
     - target: {fileID: 688287089, guid: 6bd423642e236464196866e274c23689, type: 3}
       propertyPath: avatars.Array.size
       value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 688287089, guid: 6bd423642e236464196866e274c23689, type: 3}
+      propertyPath: displaySDKSkeleton
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 688287089, guid: 6bd423642e236464196866e274c23689, type: 3}
       propertyPath: avatars.Array.data[1]

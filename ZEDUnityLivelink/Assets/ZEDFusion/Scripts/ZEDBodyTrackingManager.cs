@@ -165,7 +165,7 @@ public class ZEDBodyTrackingManager : MonoBehaviour
         {
             int person_id = bodyData.id;
 
-            if (bodyData.tracking_state == sl.OBJECT_TRACK_STATE.OK)
+            if (bodyData.tracking_state == sl.TRACKING_STATE.OK)
             {
                 //Avatar controller already exist --> update position
                 if (avatarControlList.ContainsKey(person_id))
@@ -183,7 +183,7 @@ public class ZEDBodyTrackingManager : MonoBehaviour
                     }
                 }
             }
-            else if (bodyData.tracking_state == OBJECT_TRACK_STATE.TERMINATE) // detection lost, destroy gameobject.
+            else if (bodyData.tracking_state == TRACKING_STATE.TERMINATE) // detection lost, destroy gameobject.
             {
                 if (avatarControlList.ContainsKey(person_id))
                 {
@@ -193,15 +193,6 @@ public class ZEDBodyTrackingManager : MonoBehaviour
                 }
             }
         }
-
-        /*foreach (int index in remainingKeyList)
-		{
-			SkeletonHandler handler = avatarControlList[index];
-			handler.Destroy();
-			avatarControlList.Remove(index);
-            avatarLastSeenTime.Remove(index);
-
-        }*/
     }
 
 	public void Update()
@@ -209,51 +200,46 @@ public class ZEDBodyTrackingManager : MonoBehaviour
         DisplaySDKSkeleton = displaySDKSkeleton;
         OffsetSDKSkeleton = offsetSDKSkeleton;
 
-            //if (Input.GetKeyDown(KeyCode.Space))
-            //{
-            //    useAvatar = !useAvatar;
-            //}
+        if (Input.GetKeyDown(KeyCode.Keypad0))
+        {
+            displaySDKSkeleton = !displaySDKSkeleton;
+        }
 
-            if (Input.GetKeyDown(KeyCode.Keypad0))
-            {
-                displaySDKSkeleton = !displaySDKSkeleton;
-            }
+        if (Input.GetKeyDown(toggleFootIK))
+        {
+            enableFootIK = !enableFootIK;
+        }
 
-            if (Input.GetKeyDown(toggleFootIK))
-            {
-                enableFootIK = !enableFootIK;
-            }
+        if (Input.GetKeyDown(toggleFootLock))
+        {
+            enableFootLocking = !enableFootLocking;
+        }
 
-            if (Input.GetKeyDown(toggleFootLock))
-            {
-                enableFootLocking = !enableFootLocking;
-            }
+        if (Input.GetKeyDown(toggleMirrorMode))
+        {
+            mirrorMode = !mirrorMode;
+        }
 
-            if (Input.GetKeyDown(toggleMirrorMode))
-            {
-                mirrorMode = !mirrorMode;
-            }
-
-            if (Input.GetKeyDown(increaseOffsetKey))
-            {
-                manualOffset.y += offsetStep;
-            }
-            else if (Input.GetKeyDown(decreaseOffsetKey))
-            {
-                manualOffset.y -= offsetStep;
-            }
-            else if (Input.GetKeyDown(increaseSkeOffsetXKey))
-            {
-                offsetSDKSkeleton.x += offsetStep;
-            }
-            else if (Input.GetKeyDown(decreaseSkeOffsetXKey))
-            {
-                offsetSDKSkeleton.x -= offsetStep;
-            }
-            if (Input.GetKeyDown(toggleAutomaticHeightOffset))
-            {
-                automaticOffset = !automaticOffset;
-            }
+        if (Input.GetKeyDown(increaseOffsetKey))
+        {
+            manualOffset.y += offsetStep;
+        }
+        else if (Input.GetKeyDown(decreaseOffsetKey))
+        {
+            manualOffset.y -= offsetStep;
+        }
+        else if (Input.GetKeyDown(increaseSkeOffsetXKey))
+        {
+            offsetSDKSkeleton.x += offsetStep;
+        }
+        else if (Input.GetKeyDown(decreaseSkeOffsetXKey))
+        {
+            offsetSDKSkeleton.x -= offsetStep;
+        }
+        if (Input.GetKeyDown(toggleAutomaticHeightOffset))
+        {
+            automaticOffset = !automaticOffset;
+        }
 
 
         // Display avatars or not depending on useAvatar setting.

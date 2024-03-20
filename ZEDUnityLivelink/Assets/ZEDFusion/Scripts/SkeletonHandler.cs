@@ -790,7 +790,7 @@ public class SkeletonHandler : ScriptableObject
         float width = 0.025f;
         for (int j = 0; j < spheres.Length; j++)
         {
-            if (sl.ZEDCommon.IsVector3NaN(currentJoints[currentSpheresList[j]]))
+            if (sl.ZEDCommon.IsNaN(currentJoints[currentSpheresList[j]]))
             {
                 spheres[j].transform.position = Vector3.zero + offsetSDK;
                 spheres[j].SetActive(false);

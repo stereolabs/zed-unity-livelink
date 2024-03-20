@@ -3,18 +3,149 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using UnityEngine.Playables;
 
 namespace sl
 {
     public class ZEDCommon
     {
-        public static bool IsVector3NaN(Vector3 input)
+        public static bool IsNaN(Vector3 input)
         {
             if (float.IsNaN(input.x) || float.IsNaN(input.y) || float.IsNaN(input.z))
                 return true;
             else
                 return false;
         }
+
+        public static bool IsNull(Quaternion input)
+        {
+            if (input.x == 0 && input.y == 0 && input.z == 0 && input.w == 0)
+                return true;
+            else
+                return false;
+        }
+
+        //Convert vector to Unity coordinate unit (centimeter)
+        static float GetUnitFactor(ZED_COORDINATE_UNIT InUnit)
+        {
+            float factor = 1;
+
+            switch (InUnit)
+            {
+                case ZED_COORDINATE_UNIT.METER:
+                    factor = 1;
+                    break;
+                case ZED_COORDINATE_UNIT.CENTIMETER:
+                    factor = 0.01f;
+                    break;
+                case ZED_COORDINATE_UNIT.MILLIMETER:
+                    factor = 0.001f;
+                    break;
+                case ZED_COORDINATE_UNIT.INCH:
+                    factor = 0.0254f;
+                    break;
+                case ZED_COORDINATE_UNIT.FOOT:
+                    factor = 0.3048f;
+                    break;
+                default:
+                    factor = 0.1f;
+                    break;
+            }
+            return factor;
+        }
+
+        public static void GetCoordinateTransform(ZED_COORDINATE_SYSTEM coord_system, ref Matrix4x4 coordinateMatrix)
+        {
+            coordinateMatrix = Matrix4x4.identity;
+
+            // set desired coordinate system
+            switch (coord_system)
+            {
+                case ZED_COORDINATE_SYSTEM.IMAGE:
+                    coordinateMatrix = Matrix4x4.identity;
+                    break;
+                case ZED_COORDINATE_SYSTEM.LEFT_HANDED_Y_UP:
+                    coordinateMatrix.m11 = -1;
+                    break;
+                case ZED_COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP:
+                    coordinateMatrix.m11 = -1;
+                    coordinateMatrix.m22 = -1;
+                    break;
+                case ZED_COORDINATE_SYSTEM.RIGHT_HANDED_Z_UP:
+                    coordinateMatrix.m11 = 0;
+                    coordinateMatrix.m12 = -1;
+                    coordinateMatrix.m21 = 1;
+                    coordinateMatrix.m22 = 0;
+                    break;
+                case ZED_COORDINATE_SYSTEM.RIGHT_HANDED_Z_UP_X_FWD:
+                    coordinateMatrix.m00 = 0;
+                    coordinateMatrix.m11 = 0;
+                    coordinateMatrix.m22 = 0;
+                    coordinateMatrix.m12 = -1;
+                    coordinateMatrix.m01 = -1;
+                    coordinateMatrix.m20 = 1;
+
+                    break;
+                case ZED_COORDINATE_SYSTEM.LEFT_HANDED_Z_UP:
+                    coordinateMatrix.m00 = 0;
+                    coordinateMatrix.m01 = 1;
+                    coordinateMatrix.m10 = 0;
+                    coordinateMatrix.m11 = 0;
+                    coordinateMatrix.m12 = -1;
+                    coordinateMatrix.m20 = 1;
+                    coordinateMatrix.m21 = 0;
+                    coordinateMatrix.m22 = 0;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        //Convert Transform to Unity coordinate frame (Left Y up)
+        public static Vector3 ConvertToUnityCoordinateSystem(ZED_COORDINATE_SYSTEM InFrame, ZED_COORDINATE_UNIT InUnit, Vector3 InVector)
+        {
+            float UnitFactor = GetUnitFactor(InUnit);
+
+            Matrix4x4 tmp = Matrix4x4.identity; 
+            Matrix4x4 coordTransf = Matrix4x4.identity;
+
+            GetCoordinateTransform(InFrame, ref tmp); //src 
+            GetCoordinateTransform(ZED_COORDINATE_SYSTEM.LEFT_HANDED_Y_UP, ref coordTransf); // dst is unity coordinate system
+
+            Matrix4x4 mat = (coordTransf.inverse * tmp);
+            Vector3 res = mat.MultiplyPoint(InVector) * UnitFactor;
+
+            return res;
+        }
+
+        public static Quaternion ConvertToUnityCoordinateSystem(ZED_COORDINATE_SYSTEM InFrame, Quaternion InQuat)
+        {
+            Matrix4x4 tmp = Matrix4x4.identity;
+            Matrix4x4 coordTransf = Matrix4x4.identity;
+
+            GetCoordinateTransform(InFrame, ref tmp); //src 
+            GetCoordinateTransform(ZED_COORDINATE_SYSTEM.LEFT_HANDED_Y_UP, ref coordTransf); // dst is unity coordinate system
+
+            Matrix4x4 mat = (coordTransf.inverse * tmp);
+
+            if (!ZEDCommon.IsNull(InQuat))
+            {
+                Matrix4x4 transformationMatrix = Matrix4x4.TRS(Vector3.zero, InQuat, Vector3.one);
+                Matrix4x4 resultMatrix = mat * transformationMatrix * mat.inverse;
+                return resultMatrix.rotation;
+            }
+            else
+            {
+                return Quaternion.identity;
+            }
+
+        }
+    }
+
+    public enum CONNECTION_TYPE
+    {
+        UNICAST = 0,
+        MULTICAST
     }
 
     /// <summary>
@@ -106,7 +237,26 @@ namespace sl
         LAST = 38
     };
 
-    public enum OBJECT_TRACK_STATE
+    public enum ZED_COORDINATE_SYSTEM
+    {
+        IMAGE, /**< Standard coordinates system in computer vision.\n Used in OpenCV: see <a href="http://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html">here</a>. */
+        LEFT_HANDED_Y_UP, /**< Left-handed with Y up and Z forward.\n Used in Unity with DirectX. */
+        RIGHT_HANDED_Y_UP, /**< Right-handed with Y pointing up and Z backward.\n Used in OpenGL. */
+        RIGHT_HANDED_Z_UP, /**< Right-handed with Z pointing up and Y forward.\n Used in 3DSMax. */
+        LEFT_HANDED_Z_UP, /**< Left-handed with Z axis pointing up and X forward.\n Used in Unreal Engine. */
+        RIGHT_HANDED_Z_UP_X_FWD /**< Right-handed with Z pointing up and X forward.\n Used in ROS (REP 103). */
+    };
+
+    public enum ZED_COORDINATE_UNIT
+    {
+        MILLIMETER, /**< International System (1/1000 meters) */
+        CENTIMETER, /**< International System (1/100 meters) */
+        METER, /**< International System (1 meter)*/
+        INCH, /**< Imperial Unit (1/12 feet) */
+        FOOT, /**< Imperial Unit (1 foot)*/
+    };
+
+    public enum TRACKING_STATE
     {
         OFF, /**< The tracking is not yet initialized, the object ID is not usable */
         OK, /**< The object is tracked */
@@ -114,11 +264,20 @@ namespace sl
         TERMINATE/**< This is the last searching state of the track, the track will be deleted in the next retreiveObject */
     };
 
-    public enum OBJECT_ACTION_STATE
+    public enum ACTION_STATE
     {
         IDLE = 0, /**< The object is staying static. */
         MOVING = 1, /**< The object is moving. */
-        LAST = 2
+    };
+
+    /// <summary>
+    /// type of data : camera data, animation data, etc
+    /// </summary>
+    public enum LIVELINK_ROLE
+    {
+        TRANSFORM,
+        CAMERA,
+        ANIMATION
     };
 
     public struct CameraIdentifier
@@ -174,6 +333,75 @@ namespace sl
         BODY_38
     };
 
+    public class LiveLinkCameraData
+    {
+        public int SerialNumber = -1;
+
+        public int FrameID = -1;
+
+        public ulong Timestamp = 0;
+
+        public LIVELINK_ROLE Role = LIVELINK_ROLE.CAMERA;
+
+        public ZED_COORDINATE_SYSTEM CoordinateSystem = ZED_COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP;
+
+        public ZED_COORDINATE_UNIT CoordinateUnit = ZED_COORDINATE_UNIT.MILLIMETER;
+
+        public Vector3 CameraPosition = Vector3.zero;
+
+        public Quaternion CameraRotation = Quaternion.identity;
+        public static LiveLinkCameraData CreateFromJSON(byte[] data)
+        {
+            return JsonConvert.DeserializeObject<LiveLinkCameraData>(Encoding.ASCII.GetString(data));
+        }
+    }
+
+    public class LiveLinkBodyData
+    {
+        public int frame_id = -1;
+
+        public ulong timestamp = 0;
+
+        public LIVELINK_ROLE role = LIVELINK_ROLE.CAMERA;
+
+        public BODY_FORMAT body_format;
+
+        public bool is_new = false;
+
+        public ZED_COORDINATE_SYSTEM coordinate_system = ZED_COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP;
+
+        public ZED_COORDINATE_UNIT coordinate_unit = ZED_COORDINATE_UNIT.MILLIMETER;
+
+        public int nb_bodies = 0;
+
+        public TRACKING_STATE tracking_state = TRACKING_STATE.OFF;
+
+        public ACTION_STATE action_state = ACTION_STATE.IDLE;
+
+        public int id = -1;
+
+        public Vector3 position = Vector3.zero;
+
+        public float confidence = 0.0f;
+
+        public float[] keypoint_confidence;
+
+        public Vector3[] keypoint;
+
+        public Vector3[] local_position_per_joint;
+
+        public Quaternion[] local_orientation_per_joint;
+
+        public Quaternion global_root_orientation;
+
+        public Vector3 global_root_position;
+
+        public static LiveLinkBodyData CreateFromJSON(byte[] data)
+        {
+            return JsonConvert.DeserializeObject<LiveLinkBodyData>(Encoding.ASCII.GetString(data));
+        }
+    }
+
     public class BodyData
     {
         /// <summary>
@@ -183,8 +411,8 @@ namespace sl
         /// <summary>
         ///  Object label, forwarded from \ref CustomBoxObjects when using DETECTION_MODEL.CUSTOM_BOX_OBJECTS
         /// </summary>
-        public OBJECT_TRACK_STATE tracking_state;
-        public OBJECT_ACTION_STATE action_state;
+        public TRACKING_STATE tracking_state;
+        public ACTION_STATE action_state;
         public float confidence;
         /// <summary>
         /// 3D space data (Camera Frame since this is what we used in Unity)
@@ -209,7 +437,7 @@ namespace sl
         /// 4 ---------7
         /// 
         //public Vector3[] bounding_box; // 3D Bounding Box of object
-                /// <summary>
+        /// <summary>
         /// The 3D position of skeleton joints
         /// </summary>
         public Vector3[] keypoint;// 3D position of the joints of the skeleton
@@ -240,6 +468,33 @@ namespace sl
         /// Global root rotation.
         /// </summary>
         public Quaternion global_root_orientation;
+
+        public static BodyData FromLiveLinkBodyData(LiveLinkBodyData In)
+        {
+            BodyData bodyData= new BodyData();
+
+            bodyData.id = In.id;
+            bodyData.tracking_state = In.tracking_state;
+            bodyData.action_state = In.action_state;
+            bodyData.confidence = In.confidence;
+            bodyData.position = ZEDCommon.ConvertToUnityCoordinateSystem(In.coordinate_system, In.coordinate_unit, In.position);
+
+            bodyData.keypoint = new Vector3[In.keypoint.Length];
+            bodyData.local_position_per_joint = new Vector3[In.local_position_per_joint.Length];
+            bodyData.local_orientation_per_joint = new Quaternion[In.local_orientation_per_joint.Length];
+            for (int i = 0; i < In.keypoint.Length; i++)
+            {
+                bodyData.keypoint[i] = ZEDCommon.ConvertToUnityCoordinateSystem(In.coordinate_system, In.coordinate_unit, In.keypoint[i]);
+                bodyData.local_position_per_joint[i] = ZEDCommon.ConvertToUnityCoordinateSystem(In.coordinate_system, In.coordinate_unit, In.local_position_per_joint[i]);
+
+                bodyData.local_orientation_per_joint[i] = ZEDCommon.ConvertToUnityCoordinateSystem(In.coordinate_system, In.local_orientation_per_joint[i]);
+            }
+            bodyData.global_root_orientation = ZEDCommon.ConvertToUnityCoordinateSystem(In.coordinate_system, In.global_root_orientation);
+
+            bodyData.keypoint_confidence = In.keypoint_confidence;
+
+            return bodyData;
+        }
     };
 
     public class Bodies
@@ -256,32 +511,15 @@ namespace sl
         /// <summary>
         /// Defines if the object frame is new (new timestamp)
         /// </summary>
-        public int is_new;
+        public bool is_new;
         /// <summary>
         /// Defines if the object is tracked
         /// </summary>
-        public int is_tracked;
+        public bool is_tracked;
         /// <summary>
         /// Array of objects 
         /// </summary>
         public BodyData[] body_list;
-
-        public static Bodies CreateFromJSON(byte[] data)
-        {
-            return JsonConvert.DeserializeObject<Bodies>(Encoding.ASCII.GetString(data));
-        }
     };
-
-    public class DetectionData
-    {
-        public FusionMetrics fusionMetrics;
-
-        public Bodies bodies;
-
-        public static DetectionData CreateFromJSON(byte[] data)
-        {
-            return JsonConvert.DeserializeObject<DetectionData>(Encoding.ASCII.GetString(data));
-        }
-    }
 }
 

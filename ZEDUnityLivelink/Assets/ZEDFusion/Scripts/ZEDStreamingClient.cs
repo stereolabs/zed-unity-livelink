@@ -2,10 +2,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using UnityEngine;
 using System.Linq;
-using System;
+using Newtonsoft.Json.Linq;
+using System.Text;
+using sl;
 
 public class ZEDStreamingClient : MonoBehaviour
 {
@@ -13,25 +14,23 @@ public class ZEDStreamingClient : MonoBehaviour
 
     IPEndPoint ipEndPointData;
 
-    public bool useMulticast = true;
-
-    public int port = 20000;
+    public CONNECTION_TYPE ConnectionType = CONNECTION_TYPE.UNICAST;
     public string multicastIpAddress = "230.0.0.1";
-
-    public bool showZEDFusionMetrics = false;
+    public int port = 20000;
 
     private object obj = null;
     private System.AsyncCallback AC;
     byte[] receivedBytes;
 
     bool newDataAvailable = false;
-    sl.DetectionData data;
+    sl.Bodies LastBodies;
+    sl.LIVELINK_ROLE CurrentDataRole = sl.LIVELINK_ROLE.CAMERA;
 
     public delegate void onNewDetectionTriggerDelegate(sl.Bodies bodies);
     public event onNewDetectionTriggerDelegate OnNewDetection;
 
     object mutex_buffer = new object();
-    SortedDictionary<ulong, List<sl.DetectionData>> detectionDataDict = new SortedDictionary<ulong, List<sl.DetectionData>>();
+    SortedDictionary<ulong, List<sl.LiveLinkBodyData>> DataDict = new SortedDictionary<ulong, List<sl.LiveLinkBodyData>>();
 
     void Start()
     {
@@ -43,12 +42,11 @@ public class ZEDStreamingClient : MonoBehaviour
         clientData = new UdpClient();
         clientData.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, optionValue: true);
         clientData.ExclusiveAddressUse = false;
-        clientData.EnableBroadcast = false;
+        clientData.EnableBroadcast = true;
 
-        if (useMulticast)
+        if (ConnectionType == CONNECTION_TYPE.MULTICAST)
         {
             clientData.JoinMulticastGroup(IPAddress.Parse(multicastIpAddress));
-
         }
         clientData.Client.Bind(ipEndPointData);
 
@@ -68,72 +66,68 @@ public class ZEDStreamingClient : MonoBehaviour
     // fill detectionDataDict with received data
     void ParsePacket()
     {
-        sl.DetectionData d = sl.DetectionData.CreateFromJSON(receivedBytes);
-
+        sl.LIVELINK_ROLE Role = GetLiveLinkRole(receivedBytes);
         // initialize data if necessary
-        if (data==null) { data = sl.DetectionData.CreateFromJSON(receivedBytes); }
-
-        lock (mutex_buffer) // lock dictionary.
-        {
-            // add to data dictionary
-            if (detectionDataDict.ContainsKey(d.bodies.timestamp)) // if key (timestamp) exists
+        if (Role == sl.LIVELINK_ROLE.ANIMATION) 
+        { 
+            sl.LiveLinkBodyData LiveLinkData = sl.LiveLinkBodyData.CreateFromJSON(receivedBytes);
+            lock (mutex_buffer) // lock dictionary.
             {
-                detectionDataDict.GetValueOrDefault(d.bodies.timestamp).Add(d);
-            }
-            else // key (timestamp) does not exist yet
-            {
-                List<sl.DetectionData> tmpL = new List<sl.DetectionData> { d };
-                detectionDataDict.Add(d.bodies.timestamp, tmpL);
+                // add to data dictionary
+                if (DataDict.ContainsKey(LiveLinkData.timestamp)) // if key (timestamp) exists
+                {
+                    DataDict.GetValueOrDefault(LiveLinkData.timestamp).Add(LiveLinkData);
+                }
+                else // key (timestamp) does not exist yet
+                {
+                    List<sl.LiveLinkBodyData> tmpL = new List<sl.LiveLinkBodyData> { LiveLinkData };
+                    DataDict.Add(LiveLinkData.timestamp, tmpL);
+                }
             }
         }
+
+
     }
 
     // merge bodies data from dictionary into 1 bodies data
     public void PrepareData()
     {
-        if(data!=null)
-        {
             lock (mutex_buffer) // lock dictionary.
             {
-                if (detectionDataDict.Count > 0)
+                if (DataDict.Count > 0)
                 {
-                    sl.Bodies bodies = new sl.Bodies();
-
-                    // get oldest timestamp from dict
-                    bodies.timestamp = detectionDataDict.First().Key;
-
-                    // get a ref bodies
-                    sl.Bodies refBodies = detectionDataDict.First().Value.First().bodies;
-
-                    //initialize body_list
-                    bodies.body_list = new sl.BodyData[detectionDataDict.First().Value.Count];
-
-                    // fill bodies.body_list with list of detection data for said timestamp
-                    for (int i = 0; i < bodies.body_list.Length; ++i)
+                    if (CurrentDataRole == sl.LIVELINK_ROLE.ANIMATION) 
                     {
-                        bodies.body_list[i] = detectionDataDict.First().Value[i].bodies.body_list[0];
+                        sl.Bodies bodies = new sl.Bodies();
+                        // get oldest timestamp from dict
+                        bodies.timestamp = DataDict.First().Key;
+                        // get a ref bodies
+                        sl.LiveLinkBodyData refBodies = DataDict.First().Value.First();
+
+                        //initialize body_list
+                        bodies.body_list = new sl.BodyData[DataDict.First().Value.Count];
+
+                        // fill bodies.body_list with list of detection data for said timestamp
+                        for (int i = 0; i < bodies.body_list.Length; ++i)
+                        {
+                           bodies.body_list[i] = sl.BodyData.FromLiveLinkBodyData(DataDict.First().Value[i]);
+                        }
+
+                        // fill additional data
+                        bodies.body_format = refBodies.body_format;
+                        bodies.is_new = true;
+                        bodies.is_tracked = true;
+                        bodies.nb_object = bodies.body_list.Length;
+                            
+                        // remove from dictionary
+                        DataDict.Remove(bodies.timestamp);
+                        LastBodies = bodies;
+                        newDataAvailable = true;
                     }
-
-                    // fill additional data
-                    data.fusionMetrics = detectionDataDict.First().Value.First().fusionMetrics;
-                    bodies.body_format = refBodies.body_format;
-                    bodies.is_tracked = refBodies.is_tracked;
-                    bodies.nb_object = refBodies.nb_object;
-                    bodies.is_new = refBodies.is_new;
-
-                    data.bodies = bodies;
-
-                    // remove from dictionary
-                    detectionDataDict.Remove(bodies.timestamp);
-
-
-                    newDataAvailable = true;
                 }
                 else
                 {
-                    data.bodies.is_new = 0;
                 }
-            }
         }        
     }
 
@@ -142,45 +136,37 @@ public class ZEDStreamingClient : MonoBehaviour
         return newDataAvailable;
     }
 
-    public sl.FusionMetrics GetLastFusionMetrics()
-    {
-        lock (mutex_buffer)
-        {
-            return data.fusionMetrics;
-        }
-    }
     public sl.Bodies GetLastBodies()
     {
         lock (mutex_buffer)
         {
-            return data.bodies;
+            return LastBodies;
         }
     }
 
-    public bool ShowFusionMetrics()
+    public sl.LIVELINK_ROLE GetLiveLinkRole(byte[] receivedBytes)
     {
-        return showZEDFusionMetrics && data.fusionMetrics != null;
-    }
+        sl.LIVELINK_ROLE Role = sl.LIVELINK_ROLE.CAMERA;
 
+        JObject ZedData = JObject.Parse(Encoding.ASCII.GetString(receivedBytes));
+
+        // get JSON result objects into a list
+        Role = ZedData["role"].ToObject<sl.LIVELINK_ROLE>();
+
+        CurrentDataRole = Role;
+        return Role;
+    }
 
     private void Update()
     {
         PrepareData();
         if (IsNewDataAvailable())
         {
-            OnNewDetection(GetLastBodies());
-
-            newDataAvailable = false;
-
-            if (ShowFusionMetrics())
+            if (CurrentDataRole == sl.LIVELINK_ROLE.ANIMATION)
             {
-                sl.FusionMetrics metrics = GetLastFusionMetrics();
-                string tmpdbg = "";
-                foreach (var camera in metrics.camera_individual_stats)
-                {
-                    tmpdbg += "SN : " + camera.sn + " Synced Latency: " + camera.synced_latency + "FPS : " + camera.received_fps + "\n";
-                }
-                Debug.Log(tmpdbg);
+                OnNewDetection(GetLastBodies());
+
+                newDataAvailable = false;
             }
         }
     }
