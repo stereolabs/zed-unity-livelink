@@ -9,9 +9,9 @@ The data is broadcast via UDP on a specified port, and can be received using the
 
 ## Compatibility
 
-> **Current version**: 4.0.5.
+> **Current version**: 4.2.0.
 >
-> **Compatible ZED SDK Versions**: 4.0.5, 4.0.6, 4.0.7
+> **Compatible ZED SDK Versions**: 4.0.5 - 4.2.0
 
 ### Dependencies
 
